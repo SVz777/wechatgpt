@@ -1,0 +1,71 @@
+{
+  "start":{
+    "host" : "divorce-saints-antenna-frame.trycloudflare.com",
+    "port" : 80,
+    "use_https" : false
+  },
+  "defaults": {
+    "params": {
+      "sampler_name": "DPM++ SDE Karras",
+      "steps": 28,
+      "width": 640,
+      "height": 960,
+      "cfg_scale": 7,
+      "prompt":"masterpiece, best quality",
+      "negative_prompt": "(bad-artist:0.7), (bad quality:1.3),(low quality, worst quality:1.4),(bad_prompt:0.8)",
+      "enable_hr": true,
+      "hr_scale": 2,
+      "hr_upscaler": "Latent",
+      "hr_second_pass_steps": 10,
+      "denoising_strength": 0.7
+    },
+    "options": {
+      "sd_model_checkpoint": "meinamix_meinaV9"
+    }
+  },
+  "rules": [
+    {
+      "keywords": [
+        "横版",
+        "壁纸"
+      ],
+      "params": {
+        "width": 640,
+        "height": 384
+      },
+      "desc": "分辨率会变成640x384"
+    },
+    {
+      "keywords": [
+        "竖版"
+      ],
+      "params": {
+        "width": 384,
+        "height": 640
+      }
+    },
+    {
+      "keywords": [
+        "高清"
+      ],
+      "params": {
+        "enable_hr": true,
+        "hr_scale": 1.6
+      },
+      "desc": "出图分辨率长宽都会提高1.6倍"
+    },
+    {
+      "keywords": [
+        "二次元"
+      ],
+      "params": {
+        "negative_prompt": "(low quality, worst quality:1.4),(bad_prompt:0.8), (monochrome:1.1), (greyscale)",
+        "prompt": "masterpiece, best quality"
+      },
+      "options": {
+        "sd_model_checkpoint": "meinamix_meinaV8"
+      },
+      "desc": "使用二次元风格模型出图"
+    }
+  ]
+}
