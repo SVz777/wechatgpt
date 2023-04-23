@@ -5,12 +5,6 @@ ARG TZ='Asia/Shanghai'
 
 ARG CHATGPT_ON_WECHAT_VER
 
-ADD ./docker/entrypoint.sh /entrypoint.sh
-
-RUN chmod +x /entrypoint.sh \
-    && adduser -D -h /home/noroot -u 1000 -s /bin/bash noroot \
-    && chown -R noroot:noroot ${BUILD_PREFIX} \
-
 ENV BUILD_PREFIX=/app
 
 RUN apk add --no-cache \
@@ -28,7 +22,13 @@ RUN apk add --no-cache \
     && /usr/local/bin/python -m pip install --no-cache --upgrade pip \
     && pip install --no-cache -r requirements.txt \
     && pip install --no-cache -r requirements-optional.txt \
-    && apk del curl wget
+    && apk del curl wget \
+
+ADD ./docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh \
+    && adduser -D -h /home/noroot -u 1000 -s /bin/bash noroot \
+    && chown -R noroot:noroot ${BUILD_PREFIX} \
 
 WORKDIR ${BUILD_PREFIX}
 
