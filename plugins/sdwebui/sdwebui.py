@@ -100,7 +100,7 @@ class SDWebUI(Plugin):
             reply.type = ReplyType.ERROR
             reply.content = "[SD] "+str(e)
             logger.error("[SD] exception: %s" % e)
-            e_context.action = EventAction.CONTINUE  # 事件继续，交付给下个插件或默认逻辑
+            e_context.action = EventAction.BREAK_PASS  # 事件结束后，跳过处理context的默认逻辑
         finally:
             e_context['reply'] = reply
 
