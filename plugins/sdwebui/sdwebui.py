@@ -26,6 +26,8 @@ class SDWebUI(Plugin):
                 self.default_params = defaults["params"]
                 self.default_options = defaults["options"]
                 self.start_args = config["start"]
+                if conf().get('sd_webui_api'):
+                    self.start_args['host'] = conf().get('sd_webui_api')
                 self.api = webuiapi.WebUIApi(**self.start_args)
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             logger.info("[SD] inited")

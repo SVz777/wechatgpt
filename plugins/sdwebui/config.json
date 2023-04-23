@@ -20,7 +20,7 @@
       "denoising_strength": 0.7
     },
     "options": {
-      "sd_model_checkpoint": "meinamix_meinaV9"
+      "sd_model_checkpoint": "MeinaMix/meinamix_meinaV9.safetensors [eac6c08a19]"
     }
   },
   "rules": [
