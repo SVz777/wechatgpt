@@ -12,11 +12,11 @@ RUN apk add --no-cache \
         curl \
         wget \
     && export BUILD_GITHUB_TAG=master \
-    && wget -t 3 -T 30 -nv -O chatgpt-on-wechat-${BUILD_GITHUB_TAG}.tar.gz \
+    && wget -t 3 -T 30 -nv -O wechatgpt-${BUILD_GITHUB_TAG}.tar.gz \
             https://github.com/SVz777/wechatgpt/archive/refs/heads/${BUILD_GITHUB_TAG}.tar.gz \
-    && tar -xzf chatgpt-on-wechat-${BUILD_GITHUB_TAG}.tar.gz \
-    && mv chatgpt-on-wechat-${BUILD_GITHUB_TAG} ${BUILD_PREFIX} \
-    && rm chatgpt-on-wechat-${BUILD_GITHUB_TAG}.tar.gz \
+    && tar -xzf wechatgpt-${BUILD_GITHUB_TAG}.tar.gz \
+    && mv wechatgpt-${BUILD_GITHUB_TAG} ${BUILD_PREFIX} \
+    && rm wechatgpt-${BUILD_GITHUB_TAG}.tar.gz \
     && cd ${BUILD_PREFIX} \
     && cp config-template.json ${BUILD_PREFIX}/config.json \
     && /usr/local/bin/python -m pip install --no-cache --upgrade pip \
