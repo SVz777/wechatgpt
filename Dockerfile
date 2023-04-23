@@ -32,7 +32,6 @@ RUN chmod +x /entrypoint.sh \
     && adduser -D -h /home/noroot -u 1000 -s /bin/bash noroot \
     && chown -R noroot:noroot ${BUILD_PREFIX}
 
-
 USER noroot
 
 ENTRYPOINT ["/entrypoint.sh"]
