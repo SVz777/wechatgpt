@@ -3,7 +3,7 @@ FROM python:3.10-alpine
 LABEL maintainer="foo@bar.com"
 ARG TZ='Asia/Shanghai'
 
-ARG CHATGPT_ON_WECHAT_VER
+ARG CHATGPT_ON_WECHAT_VER='1'
 
 ENV BUILD_PREFIX=/app
 
