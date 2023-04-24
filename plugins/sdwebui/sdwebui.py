@@ -100,22 +100,22 @@ class SDWebUI(Plugin):
 
     def get_sd_args(self, content):
         # 解析用户输入 如"横版 高清 二次元||cat||nsfw"
-        keywords = ''
+        keywords = []
         prompt = ''
         negative_prompt = ''
         checkpoint = ''
         user_params = content.split("||")
         if len(user_params) >= 1:
-            keywords = user_params[0]
+            keywords = user_params[0].split(' ')
         if len(user_params) >= 2:
             prompt = user_params[1]
         if len(user_params) >= 3:
             negative_prompt = user_params[2]
-        if keywords == '自定义':
+        if '自定义' in keywords:
             if len(user_params) >= 4:
                 checkpoint = user_params[3]
 
-        return keywords.split(' '), prompt, negative_prompt, checkpoint
+        return keywords, prompt, negative_prompt, checkpoint
 
     def get_help_text(self, verbose=False, **kwargs):
         if not conf().get('image_create_prefix'):
