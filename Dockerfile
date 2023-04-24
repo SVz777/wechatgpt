@@ -7,11 +7,11 @@ RUN apk add --no-cache \
         bash \
         curl \
         wget \
+        tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone \
     && /usr/local/bin/python -m pip install --no-cache --upgrade pip \
-    && apk add --no-cache tzdata \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-    echo "Asia/Shanghai" > /etc/timezone \
-    apk del tzdata
+    && apk del tzdata
 
 ENV BUILD_PREFIX=/app
 COPY . ${BUILD_PREFIX}
