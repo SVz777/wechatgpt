@@ -37,33 +37,24 @@ class SDWebUI(Plugin):
             else:
                 logger.warn("[SD] init failed, ignore or see https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/sdwebui .")
             raise e
-    
-    def on_handle_context(self, e_context: EventContext):
 
+    def on_handle_context(self, e_context: EventContext):
         if e_context['context'].type != ContextType.IMAGE_CREATE:
             return
         channel = e_context['channel']
         if ReplyType.IMAGE in channel.NOT_SUPPORT_REPLYTYPE:
             return
 
-        logger.debug("[SD] on_handle_context. content: %s" %e_context['context'].content)
+        logger.debug("[SD] on_handle_context. content: %s" % e_context['context'].content)
 
         logger.info("[SD] image_query={}".format(e_context['context'].content))
         reply = Reply()
         try:
             content = e_context['context'].content[:]
-            # 解析用户输入 如"横版 高清 二次元:cat"
-            if ":" in content:
-                keywords, prompt = content.split(":", 1)
-            else:
-                keywords = content
-                prompt = ""
-
-            keywords = keywords.split()
-
+            keywords, prompt, negative_prompt, checkpoint = self.get_sd_args(content)
             if "help" in keywords or "帮助" in keywords:
                 reply.type = ReplyType.INFO
-                reply.content = self.get_help_text(verbose = True)
+                reply.content = self.get_help_text(verbose=True)
             else:
                 rule_params = {}
                 rule_options = {}
@@ -80,14 +71,17 @@ class SDWebUI(Plugin):
                             break  # 一个关键词只匹配一个规则
                     if not matched:
                         logger.warning("[SD] keyword not matched: %s" % keyword)
-                
+
                 params = {**self.default_params, **rule_params}
                 options = {**self.default_options, **rule_options}
-                params["prompt"] = params.get("prompt", "")+f", {prompt}"
+                if checkpoint != '':
+                    options['sd_model_checkpoint'] = checkpoint
+                params["prompt"] = params.get("prompt", "") + f", {prompt}"
+                params["negative_prompt"] = params.get("negative_prompt", "") + f", {negative_prompt}"
                 if len(options) > 0:
-                    logger.info("[SD] cover options={}".format(options))
+                    logger.info(f"[SD] cover {options=}")
                     self.api.set_options(options)
-                logger.info("[SD] params={}".format(params))
+                logger.info(f"[SD] {params=}")
                 result = self.api.txt2img(
                     **params
                 )
@@ -98,13 +92,32 @@ class SDWebUI(Plugin):
             e_context.action = EventAction.BREAK_PASS  # 事件结束后，跳过处理context的默认逻辑
         except Exception as e:
             reply.type = ReplyType.ERROR
-            reply.content = "[SD] "+str(e)
+            reply.content = "[SD] " + str(e)
             logger.error("[SD] exception: %s" % e)
             e_context.action = EventAction.BREAK_PASS  # 事件结束后，跳过处理context的默认逻辑
         finally:
             e_context['reply'] = reply
 
-    def get_help_text(self, verbose = False, **kwargs):
+    def get_sd_args(self, content):
+        # 解析用户输入 如"横版 高清 二次元||cat||nsfw"
+        keywords = ''
+        prompt = ''
+        negative_prompt = ''
+        checkpoint = ''
+        user_params = content.split("||")
+        if len(user_params) >= 1:
+            keywords = user_params[0]
+        if len(user_params) >= 2:
+            prompt = user_params[1]
+        if len(user_params) >= 3:
+            negative_prompt = user_params[2]
+        if keywords == '自定义':
+            if len(user_params) >= 4:
+                checkpoint = user_params[3]
+
+        return keywords.split(' '), prompt, negative_prompt, checkpoint
+
+    def get_help_text(self, verbose=False, **kwargs):
         if not conf().get('image_create_prefix'):
             return "画图功能未启用"
         else:
@@ -112,12 +125,13 @@ class SDWebUI(Plugin):
         help_text = "利用stable-diffusion来画图。\n"
         if not verbose:
             return help_text
-        
-        help_text += f"使用方法:\n使用\"{trigger}[关键词1] [关键词2]...:提示语\"的格式作画，如\"{trigger}横版 高清:cat\"\n"
+
+        help_text += '使用方法:\n'
+        help_text += f'使用"{trigger}[关键词1] [关键词2]...[||正向提示语[||反向提示语]]"的格式作画，如"{trigger}横版 高清:cat\n'
         help_text += "目前可用关键词：\n"
         for rule in self.rules:
             keywords = [f"[{keyword}]" for keyword in rule['keywords']]
-            help_text += f"{','.join(keywords)}"
+            help_text += f"    {','.join(keywords)}"
             if "desc" in rule:
                 help_text += f"-{rule['desc']}\n"
             else:
