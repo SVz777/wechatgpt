@@ -11,6 +11,8 @@ from common.log import logger
 import webuiapi
 import io
 
+params_append_keys = ['prompt', 'negative_prompt']
+
 
 @plugins.register(name="sdwebui", desc="利用stable-diffusion webui来画图", version="2.0", author="lanvent")
 class SDWebUI(Plugin):
@@ -26,8 +28,6 @@ class SDWebUI(Plugin):
                 self.default_params = defaults["params"]
                 self.default_options = defaults["options"]
                 self.start_args = config["start"]
-                if conf().get('sd_webui_api'):
-                    self.start_args['host'] = conf().get('sd_webui_api')
                 self.api = webuiapi.WebUIApi(**self.start_args)
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             logger.info("[SD] inited")
@@ -48,57 +48,66 @@ class SDWebUI(Plugin):
         logger.debug("[SD] on_handle_context. content: %s" % e_context['context'].content)
 
         logger.info("[SD] image_query={}".format(e_context['context'].content))
+        reply = self.progress_content(e_context['context'].content)
+        e_context['reply'] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+    def progress_content(self, content):
         reply = Reply()
         try:
-            content = e_context['context'].content[:]
             keywords, prompt, negative_prompt, checkpoint = self.get_sd_args(content)
             if "help" in keywords or "帮助" in keywords:
                 reply.type = ReplyType.INFO
                 reply.content = self.get_help_text(verbose=True)
-            else:
-                rule_params = {}
-                rule_options = {}
-                for keyword in keywords:
-                    matched = False
-                    for rule in self.rules:
-                        if keyword in rule["keywords"]:
-                            for key in rule["params"]:
-                                rule_params[key] = rule["params"][key]
-                            if "options" in rule:
-                                for key in rule["options"]:
-                                    rule_options[key] = rule["options"][key]
-                            matched = True
-                            break  # 一个关键词只匹配一个规则
-                    if not matched:
-                        logger.warning("[SD] keyword not matched: %s" % keyword)
+                return reply
 
-                params = {**self.default_params, **rule_params}
-                options = {**self.default_options, **rule_options}
-                if checkpoint != '':
-                    options['sd_model_checkpoint'] = checkpoint
-                params["prompt"] = params.get("prompt", "") + f", {prompt}"
-                params["negative_prompt"] = params.get("negative_prompt", "") + f", {negative_prompt}"
-                if len(options) > 0:
-                    logger.info(f"[SD] cover {options=}")
-                    self.api.set_options(options)
-                logger.info(f"[SD] {params=}")
-                result = self.api.txt2img(
-                    **params
-                )
-                reply.type = ReplyType.IMAGE
-                b_img = io.BytesIO()
-                result.image.save(b_img, format="PNG")
-                reply.content = b_img
-            e_context.action = EventAction.BREAK_PASS  # 事件结束后，跳过处理context的默认逻辑
+            params = {**self.default_params}
+            options = {**self.default_options}
+            if "自定义" in keywords:
+                params["prompt"] = ''
+                params["negative_prompt"] = ''
+
+            for keyword in keywords:
+                matched = False
+                for rule in self.rules:
+                    if keyword in rule["keywords"]:
+                        for key in rule["params"]:
+                            if key in params_append_keys and key in params:
+                                params[key] += f',{rule["params"][key]}'
+                            else:
+                                params[key] = rule["params"][key]
+                        if "options" in rule:
+                            for key in rule["options"]:
+                                options[key] = rule["options"][key]
+                        matched = True
+                        break  # 一个关键词只匹配一个规则
+                if not matched:
+                    logger.warning("[SD] keyword not matched: %s" % keyword)
+
+            if checkpoint != '':
+                options['sd_model_checkpoint'] = checkpoint
+            if len(options) > 0:
+                logger.info(f"[SD] cover {options=}")
+                self.api.set_options(options)
+
+            params["prompt"] = params.get("prompt", "") + f", {prompt}"
+            params["negative_prompt"] = params.get("negative_prompt", "") + f", {negative_prompt}"
+            logger.info(f"[SD] {params=}")
+            result = self.api.txt2img(
+                **params
+            )
+            reply.type = ReplyType.IMAGE
+            b_img = io.BytesIO()
+            result.image.save(b_img, format="PNG")
+            reply.content = b_img
         except Exception as e:
             reply.type = ReplyType.ERROR
             reply.content = "[SD] " + str(e)
             logger.error("[SD] exception: %s" % e)
-            e_context.action = EventAction.BREAK_PASS  # 事件结束后，跳过处理context的默认逻辑
-        finally:
-            e_context['reply'] = reply
+        return reply
 
-    def get_sd_args(self, content):
+    @staticmethod
+    def get_sd_args(content):
         # 解析用户输入 如"横版 高清 二次元||cat||nsfw"
         keywords = []
         prompt = ''
@@ -111,9 +120,8 @@ class SDWebUI(Plugin):
             prompt = user_params[1]
         if len(user_params) >= 3:
             negative_prompt = user_params[2]
-        if '自定义' in keywords:
-            if len(user_params) >= 4:
-                checkpoint = user_params[3]
+        if len(user_params) >= 4:
+            checkpoint = user_params[3]
 
         return keywords, prompt, negative_prompt, checkpoint
 
@@ -137,3 +145,8 @@ class SDWebUI(Plugin):
             else:
                 help_text += "\n"
         return help_text
+
+
+if __name__ == '__main__':
+    sd = SDWebUI()
+    sd.progress_content("二次元 横版 高清 人物")
