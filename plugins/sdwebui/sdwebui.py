@@ -60,6 +60,10 @@ class SDWebUI(Plugin):
                 reply.type = ReplyType.INFO
                 reply.content = self.get_help_text(verbose=True)
                 return reply
+            if "models" in keywords or "模型列表" in keywords:
+                reply.type = ReplyType.INFO
+                reply.content = self.get_models()
+                return reply
 
             params = {**self.default_params}
             options = {**self.default_options}
@@ -125,6 +129,14 @@ class SDWebUI(Plugin):
 
         return keywords, prompt, negative_prompt, checkpoint
 
+    def get_models(self):
+        res = self.api.get_sd_models()
+        names = [i['model_name'] for i in res]
+        help_text = "可用模型:\n"
+        for name in names:
+            help_text += f'   {name}\n'
+        return help_text
+
     def get_help_text(self, verbose=False, **kwargs):
         if not conf().get('image_create_prefix'):
             return "画图功能未启用"
@@ -149,4 +161,4 @@ class SDWebUI(Plugin):
 
 if __name__ == '__main__':
     sd = SDWebUI()
-    sd.progress_content("二次元 横版 高清 人物")
+    print(sd.progress_content("models"))
